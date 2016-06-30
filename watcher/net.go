@@ -25,11 +25,12 @@ func startWorker(target NetTarget) {
 	go func() {
 		for {
 			start := time.Now()
-			_, err := net.DialTimeout(target.Network, target.Address, timeout)
+			conn, err := net.DialTimeout(target.Network, target.Address, timeout)
 			end := time.Now()
 			sleep := interval - end.Sub(start)
 
 			if err == nil {
+				conn.Close()
 				log.Debug("OK: ", target.Address, " sleep seconds: ", sleep)
 			} else {
 				log.Info("Cannot get ", target.Address, " : ", err, " sleep seconds: ", sleep)
