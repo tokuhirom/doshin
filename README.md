@@ -23,21 +23,18 @@ alert_manager:
   url: http://localhost:9093/api/v1/alerts
   labels:
     service: my-great-webapp
+interval: 10s
 watch:
   http:
     targets:
       - url: http://example.com/
-        interval: 10s
       - url: http://example.cm/
-        interval: 10s
   net:
     targets:
       - network: tcp
         address: example.com:80
-        interval: 10s
       - network: tcp
         address: example.com:22
-        interval: 10s
 ```
 
 ## LICENSE

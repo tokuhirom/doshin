@@ -8,6 +8,7 @@ import (
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"math/rand"
+	"sync"
 	"time"
 )
 
@@ -19,10 +20,30 @@ type Alert struct {
 type Config struct {
 	Watch        Alert                     `yaml:"watch"`
 	AlertManager sender.AlertManagerConfig `yaml:"alert_manager"`
+	Interval     string                    `yaml:"interval"`
 }
 
 func init() {
 	rand.Seed(time.Now().UnixNano())
+}
+
+func run(config Config) {
+	ch := sender.StartAlertManagerWorker(config.AlertManager)
+
+	interval := watcher.ParseDuration(60*time.Second, config.Interval)
+	throttle := time.Tick(interval)
+
+	for {
+		// read it
+		var wg sync.WaitGroup
+
+		watcher.StartHttpWatchers(config.Watch.Http, ch, &wg)
+		watcher.StartNetWatchers(config.Watch.Net, ch, wg)
+
+		wg.Wait()
+
+		<-throttle
+	}
 }
 
 func main() {
@@ -49,12 +70,5 @@ func main() {
 		log.Fatal(err)
 	}
 
-	ch := sender.StartAlertManagerWorker(config.AlertManager)
-
-	// read it
-	watcher.StartHttpWatchers(config.Watch.Http, ch)
-	watcher.StartNetWatchers(config.Watch.Net)
-
-	// Sleep forever
-	select {}
+	run(config)
 }
